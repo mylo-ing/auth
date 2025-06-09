@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: signup-ui-service
+  labels:
+    app: signup-ui
+spec:
+  selector:
+    app: signup-ui
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+  type: ClusterIP

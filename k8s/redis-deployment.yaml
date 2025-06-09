@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mylocal-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mylocal-redis
+  template:
+    metadata:
+      labels:
+        app: mylocal-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          # If you want a password-based Redis:
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mylocal-api-secrets
+                  key: REDIS_PASSWORD
+          command: [ "redis-server" ] #, "--requirepass", "$(REDIS_PASSWORD)"
+

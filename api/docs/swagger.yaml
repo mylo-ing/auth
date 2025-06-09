@@ -1,0 +1,131 @@
+basePath: /
+definitions:
+  handlers.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  handlers.SubscriberResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+  models.Subscriber:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      newsletter:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+host: localhost:3517
+info:
+  contact:
+    email: info@mylo.ing
+    name: myLocal signup API Support
+    url: https://github.com/mylo-ing/signup/issues
+  description: The myLocal signup API is built in Go with Fiber and GORM.
+  license:
+    name: AGPLv3
+  title: myLocal Signup API
+  version: "1.0"
+paths:
+  /admin/subscribers:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Subscriber info
+        in: body
+        name: subscriber
+        required: true
+        schema:
+          $ref: '#/definitions/models.Subscriber'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Subscriber'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SubscriberResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SubscriberResponse'
+      summary: Create a new subscriber
+      tags:
+      - subscribers
+  /signup/subscribers:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Subscriber info
+        in: body
+        name: subscriber
+        required: true
+        schema:
+          $ref: '#/definitions/models.Subscriber'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Subscriber'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.SubscriberResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.SubscriberResponse'
+      summary: Create a new subscriber
+      tags:
+      - subscribers
+  /signup/verify:
+    post:
+      consumes:
+      - application/json
+      description: Takes an email and 6-digit code. If valid, generate JWT & store
+        session in redis
+      parameters:
+      - description: e.g. { \
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Verify Subscriber Email with Code
+      tags:
+      - subscriber
+swagger: "2.0"
