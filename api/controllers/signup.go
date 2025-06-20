@@ -1,15 +1,11 @@
-package handlers
+package controllers
 
 import (
-	"crypto/rand"
-	"encoding/base64"
+	redisCache "auth-service/api/infra/cache"
+	"auth-service/api/infra/email"
+	"auth-service/api/models"
 	"fmt"
-	"log"
 	"os"
-	"regexp"
-	"signup-api/api/internal/models"
-	redisCache "signup-api/api/internal/services/cache"
-	"signup-api/api/internal/services/email"
 	"strings"
 	"time"
 
@@ -19,47 +15,9 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-/* -------------------------------------------------------------------------- */
-/*  shared helpers                                                            */
-/* -------------------------------------------------------------------------- */
-
-var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-
-type SubscriberResponse struct {
-	Message string `json:"message"`
-	Data    any    `json:"data,omitempty"`
-}
-
 // Helper to form the Redis key for storing a subscriber validation code for the given email
 func subscriberCodeKey(email string) string {
 	return "subscriber_code:" + email
-}
-
-func validateEmail(email string) error {
-	if email == "" || !emailRegex.MatchString(email) {
-		return fmt.Errorf("invalid or missing email")
-	}
-	return nil
-}
-
-// Generate a random 6-digit numeric code
-func generateSixDigitCode() string {
-	var b [3]byte
-	_, err := rand.Read(b[:])
-	if err != nil {
-		log.Println("Failed to generate random bytes, fallback to time-based code.")
-		now := time.Now().UnixNano()
-		return fmt.Sprintf("%06d", now%1000000)
-	}
-	num := (int(b[0])<<16 | int(b[1])<<8 | int(b[2])) % 1000000
-	return fmt.Sprintf("%06d", num)
-}
-
-// randomToken returns a URL-safe random string
-func randomToken(length int) string {
-	raw := make([]byte, length)
-	_, _ = rand.Read(raw)
-	return base64.RawURLEncoding.EncodeToString(raw)
 }
 
 // @Summary  Create a new subscriber
@@ -69,7 +27,7 @@ func randomToken(length int) string {
 // @Param    subscriber  body      models.Subscriber  true  "Subscriber info"
 // @Success  201         {object}  models.Subscriber
 // @Failure  400,500     {object}  handlers.SubscriberResponse
-// @Router   /signup [post]
+// @Router   /api/signup [post]
 func CreateSubscriber(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var subscriber models.Subscriber
@@ -97,6 +55,7 @@ func CreateSubscriber(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fi
 		}
 
 		env := os.Getenv("API_ENV")
+		fmt.Printf("environment: %s\n", env)
 		if env == "development" || env == "test" {
 			fmt.Printf("No email sent. Use this code: %s\n", code)
 		} else {
@@ -122,7 +81,7 @@ func CreateSubscriber(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fi
 // @Param        body  body  map[string]string  true  "e.g. { \"email\": \"user@example.com\", \"code\": \"123456\" }"
 // @Success      200   {object}  map[string]string  "success"
 // @Failure      400   {string}  string
-// @Router       /signup/verify [post]
+// @Router       /api/signup/verify [post]
 func VerifySubscriber(db *gorm.DB, cache *redis.Client) fiber.Handler {
 	var req struct {
 		Email string `json:"email"`
@@ -182,9 +141,8 @@ func VerifySubscriber(db *gorm.DB, cache *redis.Client) fiber.Handler {
 
 			// create new user record with verified subscriber
 			u := models.User{
-				Email:      s.Email,
-				Name:       s.Name,
-				Newsletter: s.Newsletter,
+				Email: s.Email,
+				Name:  s.Name,
 			}
 
 			if err := tx.
@@ -211,8 +169,8 @@ func VerifySubscriber(db *gorm.DB, cache *redis.Client) fiber.Handler {
 // @Param        body  body  map[string]string  true  "e.g. { \"email\": \"user@example.com\" }"
 // @Success      200   {object}  map[string]string  "success"
 // @Failure      400   {string}  string
-// @Router   /signup/resend [post]
-func ResendCode(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fiber.Handler {
+// @Router   /api/signup/resend [post]
+func ResendSubscriberCode(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fiber.Handler {
 	var req struct {
 		Email string `json:"email"`
 	}

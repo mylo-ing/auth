@@ -14,7 +14,7 @@ export default function Validate() {
     const router = useRouter();
 
     useEffect(() => {
-        const storedEmail = localStorage.getItem("signin_email");
+        const storedEmail = localStorage.getItem("signup_email");
         setEmail(storedEmail);
     }, []);
 
@@ -23,7 +23,7 @@ export default function Validate() {
         setMessage("");
 
         try {
-            const res = await fetch('/api/resend', {
+            const res = await fetch('/api/signup/resend', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -56,16 +56,15 @@ export default function Validate() {
 
         try {
             const res = await fetch(
-                `/api/verify`,
+                `/api/signup/verify`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    credentials: "include",
                     body: JSON.stringify(payload),
                 },
             );
-            if (!res.ok) throw new Error("Failed to sign in. Please try again.");
-            router.push("https://app.mylocal.ing");
+            if (!res.ok) throw new Error("Failed to sign up. Please try again.");
+            router.push("/signup/complete");
         } catch (err: unknown) {
             const message =
                 err instanceof Error ? err.message : "An unexpected error occurred.";

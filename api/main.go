@@ -4,24 +4,23 @@ import (
 	"log"
 	"os"
 
-	_ "signup-api/api/docs" // swagger docs
-
-	"signup-api/api/internal/routes/health"
-	"signup-api/api/internal/routes/signup"
-	redis "signup-api/api/internal/services/cache"
-	"signup-api/api/internal/services/db"
-	"signup-api/api/internal/services/email"
+	_ "auth-service/api/docs" // swagger docs
+	redis "auth-service/api/infra/cache"
+	postgres "auth-service/api/infra/db"
+	ses "auth-service/api/infra/email"
+	"auth-service/api/routes"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	swagger "github.com/gofiber/swagger"
+	"github.com/gofiber/swagger"
 )
 
-// @title           myLocal Signup API
+// @title           myLocal Auth API
 // @version         1.0
-// @description     The myLocal signup API is built in Go with Fiber and GORM.
-// @contact.name    myLocal signup API Support
-// @contact.url     https://github.com/mylo-ing/signup/issues
+// @description     The myLocal auth API is built in Go with Fiber and GORM using MC architecture.
+// @contact.name    myLocal Auth API Support
+// @contact.url     https://github.com/mylo-ing/auth/issues
 // @contact.email   info@mylo.ing
 // @license.name    AGPLv3
 // @host            localhost:3517
@@ -34,24 +33,26 @@ func main() {
 	// Logger middleware
 	app.Use(logger.New())
 
-	// Connect to Postgres db
-	db := db.Connect()
+	// Connect to Postgres DB
+	db := postgres.Connect()
 
 	// Connect to Redis cache
 	cache := redis.InitRedis()
 
 	// Prepare SES mailer
-	mailer := email.New()
+	mailer := ses.New()
 
-	// Swagger route
+	// setup routes
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000,https://auth.mylocal.ing",
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
 	app.Get("/swagger/*", swagger.HandlerDefault)
+	routes.RegisterHealthRoutes(app)
+	routes.RegisterSignupRoutes(app, db, cache, mailer)
+	routes.RegisterSigninRoutes(app, db, cache, mailer)
 
-	health.RegisterHealthRoutes(app)
-	signup.RegisterSignupRoutes(app, db, cache, mailer)
-
-	// Start
-	port := os.Getenv("APP_PORT")
-
+	port := os.Getenv("API_PORT")
 	log.Printf("Starting server on :%s", port)
 	log.Fatal(app.Listen(":" + port))
 }

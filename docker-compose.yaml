@@ -28,14 +28,16 @@ services:
       - .:/app
     environment:
       API_ENV: development
-      APP_PORT: 3517
+      API_PORT: 3517
 
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: my_local
       PGPASSWORD: password_for_dev_only
       DB_USER: api_worker
+      DB_ADMIN_USER: api_admin
       DB_PASSWORD: password_for_dev_only
+      DB_ADMIN_PASSWORD: password_for_dev_only
       DB_SSL_MODE: disable
 
       REDIS_HOST: redis

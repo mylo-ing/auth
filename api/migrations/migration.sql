@@ -88,3 +88,14 @@ CREATE TABLE IF NOT EXISTS api.users (
     updated_at TIMESTAMP WITH TIME ZONE,
     deleted_at TIMESTAMP WITH TIME ZONE
 );
+
+CREATE TABLE IF NOT EXISTS api.login_attempts (
+    id SERIAL PRIMARY KEY,
+    user_id UUID,
+    email VARCHAR(255),
+    success BOOLEAN NOT NULL DEFAULT FALSE,
+    reason VARCHAR(64),
+    ip inet,
+    user_agent VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

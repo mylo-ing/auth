@@ -56,7 +56,7 @@ $ docker compose run --rm test
 
 | Variable | Default (docker‑compose) | Purpose |
 |----------|--------------------------|---------|
-| `APP_PORT` | `3517` | Container port Fiber listens on |
+| `API_PORT` | `3517` | Container port Fiber listens on |
 | `POSTGRES_DSN` | see `docker‑compose.yaml` | DB connection string |
 | `REDIS_ADDR` | `mylocal_redis:6379` | Redis host:port |
 | `SENDGRID_API_KEY` | _empty_ | e‑mail delivery in prod |

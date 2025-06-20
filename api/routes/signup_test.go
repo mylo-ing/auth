@@ -1,13 +1,13 @@
-package signup
+package routes
 
 import (
+	redis "auth-service/api/infra/cache"
+	"auth-service/api/infra/db"
+	"auth-service/api/infra/email"
+	"auth-service/api/models"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"signup-api/api/internal/models"
-	redis "signup-api/api/internal/services/cache"
-	"signup-api/api/internal/services/db"
-	"signup-api/api/internal/services/email"
 	"strings"
 	"testing"
 

@@ -1,9 +1,9 @@
-package health
+package routes
 
 import (
-	"signup-api/api/internal/handlers"
-	"signup-api/api/internal/services/cache"
-	"signup-api/api/internal/services/db"
+	"auth-service/api/controllers"
+	"auth-service/api/infra/cache"
+	"auth-service/api/infra/db"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -16,5 +16,5 @@ func RegisterHealthRoutes(app *fiber.App) {
 
 	rdb := cache.InitRedis()
 
-	health.Get("/", handlers.HealthCheck(database, rdb))
+	health.Get("/", controllers.HealthCheck(database, rdb))
 }
