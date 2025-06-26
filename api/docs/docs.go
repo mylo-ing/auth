@@ -10,8 +10,8 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {
-            "name": "myLocal signup API Support",
-            "url": "https://github.com/mylo-ing/signup/issues",
+            "name": "myLocal Auth API Support",
+            "url": "https://github.com/mylo-ing/auth/issues",
             "email": "info@mylo.ing"
         },
         "license": {
@@ -22,7 +22,121 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/subscribers": {
+        "/api": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Begin sign-in (send code)",
+                "parameters": [
+                    {
+                        "description": "email payload – {\\",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "example: {\\\"received_email\\\":\\\"success\\\"}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/resend": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Resend verification code",
+                "parameters": [
+                    {
+                        "description": "email payload – {\\",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "example: {\\\"email\\\":\\\"user@example.com\\\"}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/signup": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -33,10 +147,10 @@ const docTemplate = `{
                 "tags": [
                     "subscribers"
                 ],
-                "summary": "Create a new subscriber",
+                "summary": "Create subscriber (send code)",
                 "parameters": [
                     {
-                        "description": "Subscriber info",
+                        "description": "subscriber json",
                         "name": "subscriber",
                         "in": "body",
                         "required": true,
@@ -55,19 +169,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.SubscriberResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.SubscriberResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/signup/subscribers": {
+        "/api/signup/resend": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -78,43 +198,54 @@ const docTemplate = `{
                 "tags": [
                     "subscribers"
                 ],
-                "summary": "Create a new subscriber",
+                "summary": "Resend verification code",
                 "parameters": [
                     {
-                        "description": "Subscriber info",
-                        "name": "subscriber",
+                        "description": "email payload – {\\",
+                        "name": "payload",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Subscriber"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "example: {\\\"email\\\":\\\"user@example.com\\\"}",
                         "schema": {
-                            "$ref": "#/definitions/models.Subscriber"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.SubscriberResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.SubscriberResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             }
         },
-        "/signup/verify": {
+        "/api/signup/verify": {
             "post": {
-                "description": "Takes an email and 6-digit code. If valid, generate JWT \u0026 store session in redis",
                 "consumes": [
                     "application/json"
                 ],
@@ -122,13 +253,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "subscriber"
+                    "subscribers"
                 ],
-                "summary": "Verify Subscriber Email with Code",
+                "summary": "Verify subscriber e-mail",
                 "parameters": [
                     {
-                        "description": "e.g. { \\",
-                        "name": "body",
+                        "description": "verify payload – {\\",
+                        "name": "payload",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -141,7 +272,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "example: {\\\"validation\\\":\\\"success\\\"}",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -152,7 +283,94 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/verify": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Verify 6-digit code",
+                "parameters": [
+                    {
+                        "description": "verify payload – {\\",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "example: {\\\"validation\\\":\\\"success\\\"}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -160,21 +378,12 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.HealthResponse": {
+        "controllers.HealthResponse": {
             "type": "object",
             "properties": {
                 "status": {
                     "type": "string",
                     "example": "ok"
-                }
-            }
-        },
-        "handlers.SubscriberResponse": {
-            "type": "object",
-            "properties": {
-                "data": {},
-                "message": {
-                    "type": "string"
                 }
             }
         },
@@ -185,6 +394,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "email": {
+                    "type": "string"
+                },
+                "email_validated_at": {
                     "type": "string"
                 },
                 "id": {
@@ -210,8 +422,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:3517",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "myLocal Signup API",
-	Description:      "The myLocal signup API is built in Go with Fiber and GORM.",
+	Title:            "myLocal Auth API",
+	Description:      "The myLocal auth API is built in Go with Fiber and GORM using MC architecture.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

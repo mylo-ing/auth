@@ -1,11 +1,11 @@
 package controllers
 
 import (
+	"auth-service/api/infra/cache"
 	"context"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -21,23 +21,25 @@ type HealthResponse struct {
 //	@Tags         system
 //	@Success      200  {object}  HealthResponse
 //	@Failure      503  {object}  HealthResponse
-func HealthCheck(db *gorm.DB, rdb *redis.Client) fiber.Handler {
+func HealthCheck(db *gorm.DB, cc cache.CodeCache) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.Context(), 800*time.Millisecond)
 		defer cancel()
 
-		// ---- Postgres ----
-		sqlDB, err := db.DB() // unwrap *gorm.DB to *sql.DB
+		// ---------- Postgres ping ------------------------------------
+		sqlDB, err := db.DB()
 		if err != nil || sqlDB.PingContext(ctx) != nil {
 			return c.Status(fiber.StatusServiceUnavailable).
 				JSON(HealthResponse{Status: "db down"})
 		}
 
-		// ---- Redis ----
-		if err := rdb.Ping(ctx).Err(); err != nil {
+		// ---------- Redis ping  --------------------------------------
+		const probeKey = "healthz"
+		if err := cc.SetValue(probeKey, "ok", time.Second); err != nil {
 			return c.Status(fiber.StatusServiceUnavailable).
 				JSON(HealthResponse{Status: "redis down"})
 		}
+		_ = cc.DeleteKey(probeKey)
 
 		return c.JSON(HealthResponse{Status: "ok"})
 	}

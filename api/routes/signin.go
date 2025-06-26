@@ -2,15 +2,15 @@ package routes
 
 import (
 	"auth-service/api/controllers"
-	"auth-service/api/infra/email"
+	"auth-service/api/infra/cache"
+	"auth-service/api/infra/mailer"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 // Registers the auth group route for users.
-func RegisterSigninRoutes(app *fiber.App, db *gorm.DB, cache *redis.Client, mailer *email.Mailer) {
+func RegisterSigninRoutes(app *fiber.App, db *gorm.DB, cache cache.CodeCache, mailer mailer.EmailSender) {
 
 	// Receive user's email and send code to it
 	app.Post("/", controllers.SigninUser(db, cache, mailer))

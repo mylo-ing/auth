@@ -1,4 +1,4 @@
-package email
+package mailer
 
 import (
 	"context"
@@ -11,24 +11,21 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 )
 
-type Mailer struct {
+type sesMailer struct {
 	ses    *sesv2.Client
 	sender string
 }
 
-func New() *Mailer {
+func NewSES() EmailSender {
 	sender := "myLocal Software <info@mylocal.ing>"
-	cfg, err := config.LoadDefaultConfig(context.TODO()) // reads env + ~/.aws/*
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatalf("ses init: %v", err)
 	}
-	return &Mailer{
-		ses:    sesv2.NewFromConfig(cfg),
-		sender: sender,
-	}
+	return &sesMailer{ses: sesv2.NewFromConfig(cfg), sender: sender}
 }
 
-func (m *Mailer) SendSignupConfirmation(toEmail, code string) error {
+func (m *sesMailer) SendSignupConfirmation(toEmail, code string) error {
 	subject := "Welcome to myLocal!"
 	text := fmt.Sprintf(`Verify your account with this code: %s`, code)
 	html := fmt.Sprintf("<strong>Verify your account with this code: %s</strong>", code)

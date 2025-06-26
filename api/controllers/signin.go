@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	redisCache "auth-service/api/infra/cache"
-	"auth-service/api/infra/email"
+	"auth-service/api/infra/cache"
+	"auth-service/api/infra/mailer"
 	"auth-service/api/models"
 	"fmt"
 	"os"
@@ -12,7 +12,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -36,20 +35,21 @@ func Logger(c *fiber.Ctx, db *gorm.DB, email string, reason string, success bool
 	}
 }
 
-// Helper to form the Redis key for storing a user validation code for the given email
+// cache key for validation code
 func userCodeKey(email string) string {
 	return "user_code:" + email
 }
 
-// @Summary  Receive a user email during sign in
+// @Summary  Begin sign-in (send code)
 // @Tags     user
 // @Accept   json
 // @Produce  json
-// @Param        body  body  map[string]string  true  "e.g. { \"email\": \"user@example.com\" }"
-// @Success      200   {object}  map[string]string  "success"
-// @Failure      400   {string}  string
+// @Param    payload body      map[string]string true "email payload – {\"email\":\"user@example.com\"}"
+// @Success  202     {object}  map[string]string "example: {\"received_email\":\"success\"}"
+// @Failure  400     {object}  map[string]string
+// @Failure  500     {object}  map[string]string
 // @Router   /api [post]
-func SigninUser(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fiber.Handler {
+func SigninUser(db *gorm.DB, cache cache.CodeCache, mailer mailer.EmailSender) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var req struct{ Email string }
 		if err := c.BodyParser(&req); err != nil {
@@ -65,7 +65,7 @@ func SigninUser(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fiber.Ha
 		code := generateSixDigitCode()
 
 		// store code in redis with 5 minute expiration
-		if err := redisCache.SetValue(cache, userCodeKey(req.Email), code, 5*time.Minute); err != nil {
+		if err := cache.SetValue(userCodeKey(req.Email), code, 5*time.Minute); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to store code in redis"})
 		}
 
@@ -84,16 +84,17 @@ func SigninUser(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fiber.Ha
 	}
 }
 
-// @Summary      Verify user email with code
-// @Description  Takes an email and 6-digit code. If valid, generate JWT & store session in redis
-// @Tags         user
-// @Accept       json
-// @Produce      json
-// @Param        body  body  map[string]string  true  "e.g. { \"email\": \"user@example.com\", \"code\": \"123456\" }"
-// @Success      200   {object}  map[string]string  "success"
-// @Failure      400   {string}  string
-// @Router       /api/verify [post]
-func VerifyUser(db *gorm.DB, cache *redis.Client) fiber.Handler {
+// @Summary  Verify 6-digit code
+// @Tags     user
+// @Accept   json
+// @Produce  json
+// @Param    payload body      map[string]string true "verify payload – {\"email\":\"user@example.com\",\"code\":\"123456\"}"
+// @Success  200     {object}  map[string]string "example: {\"validation\":\"success\"}"
+// @Failure  400     {object}  map[string]string
+// @Failure  401     {object}  map[string]string
+// @Failure  500     {object}  map[string]string
+// @Router   /api/verify [post]
+func VerifyUser(db *gorm.DB, cache cache.CodeCache) fiber.Handler {
 	var req struct {
 		Email string `json:"email"`
 		Code  string `json:"code"`
@@ -130,7 +131,7 @@ func VerifyUser(db *gorm.DB, cache *redis.Client) fiber.Handler {
 
 		// check code in Redis
 		key := userCodeKey(req.Email)
-		stored, err := redisCache.GetValue(cache, key)
+		stored, err := cache.GetValue(key)
 		if err != nil || stored == "" {
 			codeNotFoundError := "code expired or not found"
 			Logger(c, db, req.Email, codeNotFoundError, false)
@@ -145,7 +146,7 @@ func VerifyUser(db *gorm.DB, cache *redis.Client) fiber.Handler {
 				"error": codeInvalidError,
 			})
 		}
-		_ = redisCache.DeleteKey(cache, key)
+		_ = cache.DeleteKey(key)
 
 		jwtStr, _ := createJWT(userID)
 		c.Cookie(&fiber.Cookie{
@@ -164,15 +165,16 @@ func VerifyUser(db *gorm.DB, cache *redis.Client) fiber.Handler {
 	}
 }
 
-// @Summary  Resend verfication code
+// @Summary  Resend verification code
 // @Tags     user
 // @Accept   json
 // @Produce  json
-// @Param        body  body  map[string]string  true  "e.g. { \"email\": \"user@example.com\" }"
-// @Success      200   {object}  map[string]string  "success"
-// @Failure      400   {string}  string
+// @Param    payload body      map[string]string true "email payload – {\"email\":\"user@example.com\"}"
+// @Success  201     {object}  map[string]string "example: {\"email\":\"user@example.com\"}"
+// @Failure  400     {object}  map[string]string
+// @Failure  500     {object}  map[string]string
 // @Router   /api/resend [post]
-func ResendUserCode(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fiber.Handler {
+func ResendUserCode(db *gorm.DB, cache cache.CodeCache, mailer mailer.EmailSender) fiber.Handler {
 	var req struct {
 		Email string `json:"email"`
 	}
@@ -189,7 +191,7 @@ func ResendUserCode(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fibe
 		code := generateSixDigitCode()
 
 		key := userCodeKey(req.Email)
-		stored, err := redisCache.GetValue(cache, key)
+		stored, err := cache.GetValue(key)
 		if err != nil || stored == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "code expired or not found",
@@ -197,7 +199,7 @@ func ResendUserCode(db *gorm.DB, cache *redis.Client, mailer *email.Mailer) fibe
 		}
 
 		// store code in redis with 5 minute expiration
-		if err := redisCache.SetValue(cache, userCodeKey(req.Email), code, 5*time.Minute); err != nil {
+		if err := cache.SetValue(userCodeKey(req.Email), code, 5*time.Minute); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to store code in redis"})
 		}
 

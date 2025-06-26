@@ -5,9 +5,9 @@ import (
 	"os"
 
 	_ "auth-service/api/docs" // swagger docs
-	redis "auth-service/api/infra/cache"
-	postgres "auth-service/api/infra/db"
-	ses "auth-service/api/infra/email"
+	"auth-service/api/infra/cache"
+	"auth-service/api/infra/db"
+	"auth-service/api/infra/mailer"
 	"auth-service/api/routes"
 
 	"github.com/gofiber/fiber/v2"
@@ -34,13 +34,13 @@ func main() {
 	app.Use(logger.New())
 
 	// Connect to Postgres DB
-	db := postgres.Connect()
+	db := db.SetupPostgres()
 
 	// Connect to Redis cache
-	cache := redis.InitRedis()
+	cache := cache.OpenRedis()
 
 	// Prepare SES mailer
-	mailer := ses.New()
+	mailer := mailer.NewSES()
 
 	// setup routes
 	app.Use(cors.New(cors.Config{
@@ -48,7 +48,7 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 	app.Get("/swagger/*", swagger.HandlerDefault)
-	routes.RegisterHealthRoutes(app)
+	routes.RegisterHealthRoutes(app, db, cache)
 	routes.RegisterSignupRoutes(app, db, cache, mailer)
 	routes.RegisterSigninRoutes(app, db, cache, mailer)
 

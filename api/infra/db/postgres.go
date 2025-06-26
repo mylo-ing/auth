@@ -1,6 +1,7 @@
 package db
 
 import (
+	"auth-service/api/models"
 	"fmt"
 	"log"
 	"os"
@@ -10,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Connect() *gorm.DB {
+func SetupPostgres() *gorm.DB {
 	var db *gorm.DB
 	var err error
 
@@ -38,5 +39,18 @@ func Connect() *gorm.DB {
 		}
 	}
 
+	runMigrations(db)
+
 	return db
+}
+
+func runMigrations(db *gorm.DB) {
+	err := db.AutoMigrate(
+		&models.User{},
+		&models.Subscriber{},
+		&models.LoginAttempt{},
+	)
+	if err != nil {
+		log.Fatalf("migrate: %v", err)
+	}
 }

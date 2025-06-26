@@ -1,15 +1,9 @@
 basePath: /
 definitions:
-  handlers.HealthResponse:
+  controllers.HealthResponse:
     properties:
       status:
         example: ok
-        type: string
-    type: object
-  handlers.SubscriberResponse:
-    properties:
-      data: {}
-      message:
         type: string
     type: object
   models.Subscriber:
@@ -17,6 +11,8 @@ definitions:
       created_at:
         type: string
       email:
+        type: string
+      email_validated_at:
         type: string
       id:
         type: integer
@@ -31,20 +27,94 @@ host: localhost:3517
 info:
   contact:
     email: info@mylo.ing
-    name: myLocal signup API Support
-    url: https://github.com/mylo-ing/signup/issues
-  description: The myLocal signup API is built in Go with Fiber and GORM.
+    name: myLocal Auth API Support
+    url: https://github.com/mylo-ing/auth/issues
+  description: The myLocal auth API is built in Go with Fiber and GORM using MC architecture.
   license:
     name: AGPLv3
-  title: myLocal Signup API
+  title: myLocal Auth API
   version: "1.0"
 paths:
-  /admin/subscribers:
+  /api:
     post:
       consumes:
       - application/json
       parameters:
-      - description: Subscriber info
+      - description: email payload – {\
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: 'example: {\"received_email\":\"success\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Begin sign-in (send code)
+      tags:
+      - user
+  /api/resend:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: email payload – {\
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'example: {\"email\":\"user@example.com\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend verification code
+      tags:
+      - user
+  /api/signup:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: subscriber json
         in: body
         name: subscriber
         required: true
@@ -60,53 +130,63 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.SubscriberResponse'
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.SubscriberResponse'
-      summary: Create a new subscriber
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create subscriber (send code)
       tags:
       - subscribers
-  /signup/subscribers:
+  /api/signup/resend:
     post:
       consumes:
       - application/json
       parameters:
-      - description: Subscriber info
+      - description: email payload – {\
         in: body
-        name: subscriber
+        name: payload
         required: true
         schema:
-          $ref: '#/definitions/models.Subscriber'
+          additionalProperties:
+            type: string
+          type: object
       produces:
       - application/json
       responses:
         "201":
-          description: Created
+          description: 'example: {\"email\":\"user@example.com\"}'
           schema:
-            $ref: '#/definitions/models.Subscriber'
+            additionalProperties:
+              type: string
+            type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.SubscriberResponse'
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.SubscriberResponse'
-      summary: Create a new subscriber
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend verification code
       tags:
       - subscribers
-  /signup/verify:
+  /api/signup/verify:
     post:
       consumes:
       - application/json
-      description: Takes an email and 6-digit code. If valid, generate JWT & store
-        session in redis
       parameters:
-      - description: e.g. { \
+      - description: verify payload – {\
         in: body
-        name: body
+        name: payload
         required: true
         schema:
           additionalProperties:
@@ -116,7 +196,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: success
+          description: 'example: {\"validation\":\"success\"}'
           schema:
             additionalProperties:
               type: string
@@ -124,8 +204,65 @@ paths:
         "400":
           description: Bad Request
           schema:
-            type: string
-      summary: Verify Subscriber Email with Code
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify subscriber e-mail
       tags:
-      - subscriber
+      - subscribers
+  /api/verify:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: verify payload – {\
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'example: {\"validation\":\"success\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify 6-digit code
+      tags:
+      - user
 swagger: "2.0"
