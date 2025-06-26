@@ -1,6 +1,6 @@
-# myLocal Signup Service 🪧
+# myLocal Auth Service 🪧
 
-**Signup Service** is the micro service that powers user sign‑ups for the **myLocal** network.
+**Auth Service** is the micro service that powers user sign‑ups for the **myLocal** network.
 It combines a **Next.js** UI (App Router) with a **Go** API, packaged and shipped as two containers but runnable together via Docker Compose or Kubernetes.
 
 * **`/ui`** – Next · React Server Components · Tailwind CSS · Turbopack  
@@ -13,7 +13,7 @@ It combines a **Next.js** UI (App Router) with a **Go** API, packaged and shipp
 ## 🗂  Repository layout
 
 ```text
-signup/
+auth/
 ├── api/                 # Go source with Fiber and GORM
 ├── ui/                  # Next.js App Router
 ├── docker-compose.yml   # dev stack
@@ -27,8 +27,8 @@ signup/
 ### 1 Clone
 
 ```bash
-git clone https://github.com/mylo-ing/signup
-cd signup
+git clone https://github.com/mylo-ing/auth
+cd auth
 ```
 
 ### 2 Launch stack
@@ -68,8 +68,8 @@ make ui        # yarn dev outside Docker
 
 1. GitHub Actions builds & pushes images  
    ```
-   docker push jtjemsland/signup-api:<sha>
-   docker push jtjemsland/signup-ui:<sha>
+   docker push jtjemsland/auth-api:<sha>
+   docker push jtjemsland/auth-ui:<sha>
    ```
 2. Workflow patches `k8s/api-deployment.yaml` & `k8s/ui-deployment.yaml` with the same `<sha>`.
 3. `kubectl apply -f k8s/` triggers rolling upgrades in DOKS.

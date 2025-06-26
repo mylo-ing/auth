@@ -38,17 +38,17 @@ jobs:
         run: |
           docker build \
             -f api/Dockerfile \
-            -t ${{ secrets.DOCKERHUB_USERNAME }}/signup-api:${{ github.sha }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/auth-api:${{ github.sha }} \
             .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/signup-api:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/auth-api:${{ github.sha }}
 
       - name: Update image tag in API Deployment
         env:
           TAG: ${{ github.sha }}
         run: |
           yq -i '
-          (.spec.template.spec.containers[] | select(.name=="signup-api") ).image
-          = "${{ secrets.DOCKERHUB_USERNAME }}/signup-api:" + env(TAG)
+          (.spec.template.spec.containers[] | select(.name=="auth-api") ).image
+          = "${{ secrets.DOCKERHUB_USERNAME }}/auth-api:" + env(TAG)
           ' k8s/api-deployment.yaml
 
       # ──────────────────────────────────────────────
@@ -58,17 +58,17 @@ jobs:
         run: |
           docker build \
             -f ui/Dockerfile \
-            -t ${{ secrets.DOCKERHUB_USERNAME }}/signup-ui:${{ github.sha }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/auth-ui:${{ github.sha }} \
             .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/signup-ui:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/auth-ui:${{ github.sha }}
 
       - name: Update image tag in UI Deployment
         env:
           TAG: ${{ github.sha }}
         run: |
           yq -i '
-          (.spec.template.spec.containers[] | select(.name=="signup-ui") ).image
-          = "${{ secrets.DOCKERHUB_USERNAME }}/signup-ui:" + env(TAG)
+          (.spec.template.spec.containers[] | select(.name=="auth-ui") ).image
+          = "${{ secrets.DOCKERHUB_USERNAME }}/auth-ui:" + env(TAG)
           ' k8s/ui-deployment.yaml
 
       # ──────────────────────────────────────────────

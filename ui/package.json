@@ -1,5 +1,5 @@
 {
-  "name": "mylocal-signup",
+  "name": "mylocal-auth",
   "version": "0.1.0",
   "private": true,
   "scripts": {

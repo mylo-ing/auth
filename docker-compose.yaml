@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - mylocal_db_volume:/var/lib/postgresql/data
-      - ./dbshell:/docker-entrypoint-initdb.d/
+      - ./initdb:/docker-entrypoint-initdb.d/
     networks: [fullstack]
 
 # ─────────────────────────────── Redis ────────────────────────────────────
@@ -54,12 +54,7 @@ services:
     depends_on:
       - db
       - redis
-    command: >
-      sh -c "
-        ./scripts/wait-for-it.sh db:5432 -t 30 &&
-        psql -h db -U postgres -d postgres -f ./migrations/migration.sql &&
-        air
-      "
+    command: air
     networks: [fullstack]
 
 # ─────────────────────────────── UI (Next.js) ─────────────────────────────
@@ -107,11 +102,7 @@ services:
       AWS_SECRET_ACCESS_KEY: dev_only
 
     depends_on: [db, redis]
-    command: >
-      sh -c "
-        ./scripts/wait-for-it.sh db:5432 -t 30 &&
-        go test ./...
-      "
+    command: go test ./...
     networks: [fullstack]
 
 # ──────────────────────── Volumes & Network ───────────────────────────────

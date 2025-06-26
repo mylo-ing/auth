@@ -6,10 +6,10 @@ import clsx from 'clsx'
 export const metadata: Metadata = {
     title: {
       template: '%s - myLocal',
-      default: 'myLocal - Signup',
+      default: 'myLocal - Authentication',
     },
     description:
-      'myLocal - signup to the myLocal app.',
+      'myLocal - authentication for the myLocal app.',
   }
   
   const inter = Inter({

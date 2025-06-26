@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: signup-api
+  name: auth-api
   labels:
-    app: signup-api
+    app: auth-api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: signup-api
+      app: auth-api
   template:
     metadata:
       labels:
-        app: signup-api
+        app: auth-api
     spec:
       containers:
-        - name: signup-api
-          image: DOCKER_HUB_USER/signup-api:latest
+        - name: auth-api
+          image: DOCKER_HUB_USER/auth-api:latest
           ports:
             - containerPort: 3517
           env:

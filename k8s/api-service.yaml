@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: signup-api-service
+  name: auth-api-service
 spec:
   selector:
-    app: signup-api
+    app: auth-api
   ports:
     - protocol: TCP
       port: 80

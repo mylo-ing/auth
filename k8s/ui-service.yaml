@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: signup-ui-service
+  name: auth-ui-service
   labels:
-    app: signup-ui
+    app: auth-ui
 spec:
   selector:
-    app: signup-ui
+    app: auth-ui
   ports:
     - name: http
       port: 80
