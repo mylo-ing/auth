@@ -36,8 +36,9 @@ export default function Validate() {
             }
 
             setMessage("Code sent!");
-        } catch (err: any) {
-            setError(err.message || "An error occurred");
+        } catch (err: unknown) {
+            const errorMsg = err instanceof Error ? err.message : "An unexpected error occurred.";
+            setError(errorMsg);
         } finally {
             setLoading(false);
             setMessage("The six digit code has been sent to your email again.")
