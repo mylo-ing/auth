@@ -1,0 +1,108 @@
+name: Deploy to DigitalOcean Kubernetes
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  K8S_NAMESPACE: default
+  SECRET_NAME: mylocal-api-secrets
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_ACCESS_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_API_TOKEN }}
+
+      # ──────────────────────────────────────────────
+      # Build & push API image
+      # ──────────────────────────────────────────────
+      - name: Build and push API image
+        run: |
+          docker build \
+            -f api/Dockerfile \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/auth-api:${{ github.sha }} \
+            .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/auth-api:${{ github.sha }}
+
+      - name: Update image tag in API Deployment
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          yq -i '
+          (.spec.template.spec.containers[] | select(.name=="auth-api") ).image
+          = "${{ secrets.DOCKERHUB_USERNAME }}/auth-api:" + env(TAG)
+          ' k8s/api-deployment.yaml
+
+      # ──────────────────────────────────────────────
+      # Build & push UI image
+      # ──────────────────────────────────────────────
+      - name: Build & push UI image
+        run: |
+          docker build \
+            -f ui/Dockerfile \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/auth-ui:${{ github.sha }} \
+            .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/auth-ui:${{ github.sha }}
+
+      - name: Update image tag in UI Deployment
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          yq -i '
+          (.spec.template.spec.containers[] | select(.name=="auth-ui") ).image
+          = "${{ secrets.DOCKERHUB_USERNAME }}/auth-ui:" + env(TAG)
+          ' k8s/ui-deployment.yaml
+
+      # ──────────────────────────────────────────────
+      # Configure Kubeconfig for the cluster
+      # ──────────────────────────────────────────────
+      - name: Get Kubeconfig
+        run: |
+          doctl kubernetes cluster kubeconfig save "${{ secrets.K8S_CLUSTER_NAME }}"
+
+      # ──────────────────────────────────────────────
+      # (Re)create secret holding env creds (unchanged)
+      # ──────────────────────────────────────────────
+      - name: Create or update secrets in K8s
+        run: |
+          kubectl delete secret $SECRET_NAME --ignore-not-found
+          kubectl create secret generic $SECRET_NAME \
+            --from-literal=DO_ACCESS_TOKEN=${{ secrets.DO_ACCESS_TOKEN }} \
+            --from-literal=K8S_CLUSTER_NAME=${{ secrets.K8S_CLUSTER_NAME }} \
+            --from-literal=DB_HOST=${{ secrets.DB_HOST }} \
+            --from-literal=DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --from-literal=DB_ADMIN_PASSWORD=${{ secrets.DB_ADMIN_PASSWORD }} \
+            --from-literal=JWT_GUEST_SECRET_KEY=${{ secrets.JWT_GUEST_SECRET_KEY }} \
+            --from-literal=JWT_USER_SECRET_KEY=${{ secrets.JWT_USER_SECRET_KEY }} \
+            --from-literal=REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} \
+            --from-literal=AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            --from-literal=AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            --from-literal=AWS_REGION=${{ secrets.AWS_REGION }} \
+            --from-literal=DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} \
+            --from-literal=DOCKERHUB_API_TOKEN=${{ secrets.DOCKERHUB_API_TOKEN }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+      # ──────────────────────────────────────────────
+      # Apply manifests (API + UI) to the cluster
+      # ──────────────────────────────────────────────
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/

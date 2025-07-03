@@ -1,0 +1,268 @@
+basePath: /
+definitions:
+  controllers.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  models.Subscriber:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      email_validated_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      newsletter:
+        type: boolean
+      updated_at:
+        type: string
+    type: object
+host: localhost:3517
+info:
+  contact:
+    email: info@mylo.ing
+    name: myLocal Auth API Support
+    url: https://github.com/mylo-ing/auth/issues
+  description: The myLocal auth API is built in Go with Fiber and GORM using MC architecture.
+  license:
+    name: AGPLv3
+  title: myLocal Auth API
+  version: "1.0"
+paths:
+  /api:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: email payload – {\
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: 'example: {\"received_email\":\"success\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Begin sign-in (send code)
+      tags:
+      - user
+  /api/resend:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: email payload – {\
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'example: {\"email\":\"user@example.com\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend verification code
+      tags:
+      - user
+  /api/signup:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: subscriber json
+        in: body
+        name: subscriber
+        required: true
+        schema:
+          $ref: '#/definitions/models.Subscriber'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Subscriber'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create subscriber (send code)
+      tags:
+      - subscribers
+  /api/signup/resend:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: email payload – {\
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'example: {\"email\":\"user@example.com\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend verification code
+      tags:
+      - subscribers
+  /api/signup/verify:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: verify payload – {\
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'example: {\"validation\":\"success\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify subscriber e-mail
+      tags:
+      - subscribers
+  /api/verify:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: verify payload – {\
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'example: {\"validation\":\"success\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify 6-digit code
+      tags:
+      - user
+swagger: "2.0"

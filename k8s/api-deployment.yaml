@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-api
+  labels:
+    app: auth-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-api
+  template:
+    metadata:
+      labels:
+        app: auth-api
+    spec:
+      containers:
+        - name: auth-api
+          image: DOCKER_HUB_USER/auth-api:latest
+          ports:
+            - containerPort: 3517
+          env:
+            - name: API_PORT
+              value: "3517"
+            - name: DB_USER
+              value: "api_worker"
+            - name: DB_ADMIN_USER
+              value: "doadmin"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mylocal-api-secrets
+                  key: DB_PASSWORD
+            - name: DB_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mylocal-api-secrets
+                  key: DB_ADMIN_PASSWORD
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: mylocal-api-secrets
+                  key: DB_HOST
+            - name: DB_PORT
+              value: "25060"
+            - name: DB_SSL_MODE
+              value: "require"
+            - name: DB_NAME
+              value: "my_local"
+            - name: REDIS_HOST
+              value: "mylocal-redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mylocal-api-secrets
+                  key: REDIS_PASSWORD
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: mylocal-api-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: mylocal-api-secrets
+                  key: AWS_REGION
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mylocal-api-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: SENDGRID_FROM_ADDRESS
+              value: "info@mylocal.ing"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3517
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3517
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 5

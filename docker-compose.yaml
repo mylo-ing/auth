@@ -1,0 +1,154 @@
+services:
+# ─────────────────────────── Postgres + PostGIS ───────────────────────────
+  db:
+    image: postgis/postgis:17-3.5
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password_for_dev_only
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - mylocal_db_volume:/var/lib/postgresql/data
+      - ./dbshell:/docker-entrypoint-initdb.d/
+    networks: [fullstack]
+
+  db-init:
+      image: postgres:17-alpine
+      depends_on:
+        db:
+          condition: service_healthy
+      volumes:
+        - ./db/init.sql:/scripts/init.sql
+        - ./db/bootstrap.sh:/bootstrap.sh
+      entrypoint: ["/bin/sh","-eu","/bootstrap.sh"]
+      environment:
+        DB_HOST: db
+        DB_PORT: "5432"
+        DB_ADMIN_USER: postgres
+        DB_ADMIN_PASSWORD: password_for_dev_only
+        DB_USER: api_worker
+        DB_PASSWORD: password_for_dev_only
+        DB_NAME: my_local
+      restart: "no"
+      networks: [fullstack]
+
+# ─────────────────────────────── Redis ────────────────────────────────────
+  redis:
+    image: redis:7.0-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks: [fullstack]
+
+# ─────────────────────────────── API (Go) ─────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile 
+      target: dev
+    ports: ["3517:3517"]
+    volumes:
+      - .:/app
+    environment:
+      API_ENV: development
+      API_PORT: 3517
+
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: my_local
+      PGPASSWORD: password_for_dev_only
+      DB_USER: api_worker
+      DB_ADMIN_USER: api_admin
+      DB_PASSWORD: password_for_dev_only
+      DB_ADMIN_PASSWORD: password_for_dev_only
+      DB_SSL_MODE: disable
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_SESSION_DB: 0
+      REDIS_ENTITY_DB: 1
+      REDIS_PASSWORD:
+
+      # placeholder for SES email integration
+      AWS_ACCESS_KEY_ID: dev_only
+      AWS_REGION: dev_only
+      AWS_SECRET_ACCESS_KEY: dev_only
+
+    depends_on:
+      db:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: air
+    networks: [fullstack]
+
+# ─────────────────────────────── UI (Next.js) ─────────────────────────────
+  ui:
+    image: node:20-alpine            # simple dev image
+    working_dir: /app
+    volumes:
+      - ./ui:/app                    # live-reload Next.js code
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      # UI calls the API container directly
+      NEXT_PUBLIC_API_URL: http://localhost:3517/api
+    command: sh -c "yarn install --frozen-lockfile && yarn dev -p 3000"
+    ports: ["3000:3000"]
+    depends_on:
+      - api
+    networks: [fullstack]
+
+# ───────────────────────────── Test runner ────────────────────────────────
+  test:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+      target: dev
+    volumes:
+      - .:/app
+    environment:
+      API_ENV: test
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: my_local
+      DB_USER: api_worker
+      DB_PASSWORD: password_for_dev_only
+      DB_SSL_MODE: disable
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_SESSION_DB: 0
+      REDIS_ENTITY_DB: 1
+      REDIS_PASSWORD:
+
+      AWS_ACCESS_KEY_ID: dev_only
+      AWS_REGION: dev_only
+      AWS_SECRET_ACCESS_KEY: dev_only
+
+    depends_on:
+      db:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy    
+    command: go test ./...
+    networks: [fullstack]
+
+# ──────────────────────── Volumes & Network ───────────────────────────────
+volumes:
+  mylocal_db_volume:
+
+networks:
+  fullstack:
+    driver: bridge

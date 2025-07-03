@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mylocal-db-init
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: psql
+        image: postgres:17-alpine
+        env:
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: mylocal-api-secrets
+                key: DB_HOST
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_ADMIN_USER
+            value: "doadmin"
+          - name: DB_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mylocal-api-secrets
+                key: DB_ADMIN_PASSWORD
+          - name: DB_USER
+            value: "api_worker"
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mylocal-api-secrets
+                key: DB_PASSWORD
+          - name: DB_NAME
+            value: "my_local"
+        volumeMounts:
+          - { name: bootstrap-scripts, mountPath: /bootstrap.sh, subPath: bootstrap.sh }
+          - { name: bootstrap-scripts, mountPath: /scripts/init.sql, subPath: init.sql }
+      volumes:
+        - name: bootstrap-scripts
+          configMap:
+            name: db-bootstrap
+            defaultMode: 0555

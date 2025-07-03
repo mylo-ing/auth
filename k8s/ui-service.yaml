@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-ui-service
+  labels:
+    app: auth-ui
+spec:
+  selector:
+    app: auth-ui
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+  type: ClusterIP
